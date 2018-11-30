@@ -16,7 +16,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name='deezer-dl',
-    version='1.0.0',
+    version='0.0.9.2',
     author='Bruno Kanazawa',
     author_email='kanazawabruno@gmail.com',
     python_requires='>=3',
@@ -38,6 +38,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
 )
-
 
 install('git+https://github.com/nficano/pytube.git')

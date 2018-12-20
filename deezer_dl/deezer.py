@@ -53,14 +53,13 @@ class Deezer:
         url = youtube_url_pattern + url
         self.logger.info('Downloading from: {url}'.format(url=url))
         yt = YouTube(url)
-        stream = yt.streams.filter(only_audio=True).order_by('abr').last()
+        stream = yt.streams.filter(subtype='mp4', progressive=True).order_by('abr').last()
         self.logger.debug('Stream: {}'.format(stream))
         try:
-            yt.register_on_progress_callback(on_progress)
             total_size = stream.filesize
             self.logger.debug('File size: {}'.format(total_size))
-
             pbar = tqdm(total=total_size)
+            yt.register_on_progress_callback(on_progress)
             output_path = os.path.join(self.dir, 'deezer_dl', 'songs')
             os.makedirs(output_path, exist_ok=True)
             file_location = stream.download(output_path=output_path)
@@ -70,6 +69,8 @@ class Deezer:
             pbar.close()
         except KeyboardInterrupt:
             sys.exit()
+        except Exception as e:
+            self.logger.info('Error: {}'.format(e))
 
     def fetch_tracks_from_playlist(self, playlist):
         """Fetches tracks from deezer tracks or from playlist."""

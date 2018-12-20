@@ -16,7 +16,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name='deezer-dl',
-    version='0.1.0',
+    version='1.0.1',
     author='Bruno Kanazawa',
     author_email='kanazawabruno@gmail.com',
     python_requires='>=3',

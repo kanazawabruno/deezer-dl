@@ -10,7 +10,7 @@ pyasn1==0.4.4
 pyasn1-modules==0.2.2
 pydub==0.23.0
 pytube
-requests==2.20.1
+requests==2.31.0
 rsa==4.7
 six==1.11.0
 SQLAlchemy==1.3.0

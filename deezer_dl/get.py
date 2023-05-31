@@ -1,49 +1,53 @@
-import os
-import numpy as np
-import librosa
-from scipy.spatial.distance import cdist
 
-# Répertoire contenant les fichiers MP3 de la base de données
-database_dir = "mp3/"
+import pyaudio
+import wave
+from pydub import AudioSegment
 
-# Fonction pour extraire les empreintes acoustiques d'un fichier audio
-def extract_features(audio_path):
-    y, sr = librosa.load(audio_path, duration=30)  # Chargement du fichier audio
-    chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)  # Calcul du chromagramme
-    mfcc = librosa.feature.mfcc(y=y, sr=sr)  # Calcul des coefficients MFCC
-    features = np.concatenate((chroma_stft.mean(axis=1), mfcc.mean(axis=1)))  # Concaténation des caractéristiques
-    return features
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 44100
+RECORD_SECONDS = 10
+OUTPUT_FILENAME = "enregistrement.mp3"
 
-# Chargement de la base de données
-database = {}
-for filename in os.listdir(database_dir):
-    if filename.endswith(".mp3"):
-        audio_path = os.path.join(database_dir, filename)
-        features = extract_features(audio_path)
-        database[filename] = features
+p = pyaudio.PyAudio()
 
-# Fonction pour reconnaître une chanson à partir de l'audio du microphone
-def recognize_song():
-    # Enregistrement de l'audio du microphone
-    print("Enregistrement en cours...")
-    # Code pour enregistrer l'audio du microphone (utiliser la bibliothèque de votre choix)
+stream = p.open(format=FORMAT,
+                channels=CHANNELS,
+                rate=RATE,
+                input=True,
+                frames_per_buffer=CHUNK)
 
-    # Extraction des empreintes acoustiques de l'audio enregistré
-    recorded_features = extract_features("enregistrement.mp3")
+print("Enregistrement en cours...")
 
-    # Comparaison avec la base de données
-    min_distance = float("inf")
-    recognized_song = None
-    for song, features in database.items():
-        distance = cdist([recorded_features], [features], metric="euclidean")[0][0]
-        if distance < min_distance:
-            min_distance = distance
-            recognized_song = song
+frames = []
 
-    if recognized_song:
-        print("Chanson reconnue :", recognized_song)
-    else:
-        print("Aucune chanson reconnue.")
+for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+    data = stream.read(CHUNK)
+    frames.append(data)
 
-# Appel de la fonction pour reconnaître une chanson
-recognize_song()
+print("Enregistrement terminé.")
+
+stream.stop_stream()
+stream.close()
+p.terminate()
+
+wf = wave.open("enregistrement.wav", 'wb')
+wf.setnchannels(CHANNELS)
+wf.setsampwidth(p.get_sample_size(FORMAT))
+wf.setframerate(RATE)
+wf.writeframes(b''.join(frames))
+wf.close()
+
+audio = AudioSegment.from_wav("enregistrement.wav")
+audio.export(OUTPUT_FILENAME, format="mp3")
+
+
+
+from ShazamAPI import Shazam
+
+mp3_file_content_to_recognize = open('enregistrement.mp3', 'rb').read()
+
+shazam = Shazam(mp3_file_content_to_recognize)
+recognize_generator = shazam.recognizeSong()
+print(next(recognize_generator))

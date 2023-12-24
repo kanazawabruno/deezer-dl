@@ -94,10 +94,10 @@ def __download_songs(url, title, artist, album):
     print('Downloading from: {url}'.format(url=url))
     yt = YouTube(url)
     stream = yt.streams.filter(progressive=True).order_by('abr').last()
-    print('Stream: {}'.format(stream))
+    #print('Stream: {}'.format(stream))
 
     total_size = stream.filesize
-    print('File size: {}'.format(total_size))
+   # print('File size: {}'.format(total_size))
     pbar = tqdm(total=total_size)
     yt.register_on_progress_callback(on_progress)
     output_path = os.path.join(os.getcwd(), 'deezer_dl', 'songs')
@@ -110,8 +110,9 @@ def __download_songs(url, title, artist, album):
     title = title.replace("’", "")
     title = title.replace("'", "")
     title = title.replace("?", "")
+    title = title.replace("/", "")
 
-    print('File location: {}'.format(file_location))
+    #print('File location: {}'.format(file_location))
     mp4tomp3(file_location, os.path.join(output_path, title) + '.mp3')
     os.remove(file_location)
     addMeta(title, artist, album, os.path.join(output_path, title) + '.mp3')
@@ -121,141 +122,174 @@ def __download_songs(url, title, artist, album):
 
 #http://www.deezer.com/playlist/11366038524
 
-def fetch_tracks_from_playlist(playlist):
+def fetch_tracks_from_playlist(playlists):
     """Fetches tracks from deezer tracks or from playlist."""
 
-    print('Fetching tracks from playlist.')
-    songs_list = list()
-    url_playlist = playlist.replace('www', 'api')
-    data = requests.get(url_playlist).json()
-    res = requests.get(url_playlist).json()['tracks']['data']
-    #print('Result from Deezer API: {}'.format(pformat(res)))
+    playlists = playlists.values()
 
-    playlistTitle = data['title']
+    for playlist in playlists:
 
-    songs = []
+        print('Fetching tracks from playlist.')
+        songs_list = list()
+        url_playlist = playlist.replace('www', 'api')
+        #print(url_playlist)
 
-    export = exportFolder+"/music/"
-    # Check whether the specified path exists or not
-    isExist = os.path.exists(export)
-    if not isExist:
-        # Create a new directory because it does not exist
-        os.makedirs(export)
-        print("The new directory is created: " + export)
+        data = requests.get(url_playlist).json()
 
-    export = exportFolder+"/music/"+playlistTitle+"/"
-    # Check whether the specified path exists or not
-    isExist = os.path.exists(export)
-    if not isExist:
-        # Create a new directory because it does not exist
-        os.makedirs(export)
-        print("The new directory is created: " + export)
+        #print(data)
+        res = requests.get(url_playlist).json()['tracks']['data']
+        #print('Result from Deezer API: {}'.format(pformat(res)))
 
-    moi = exportFolder+"/music/"+playlistTitle+"/transit"
-    # Check whether the specified path exists or not
-    isExist = os.path.exists(moi)
-    if not isExist:
-        # Create a new directory because it does not exist
-        os.makedirs(moi)
-        print("The new directory is created: " + moi)
+        playlistTitle = data['title']
 
-    downloadList = []
+        songs = []
 
-    for x in res:
-        title = x['title']
-        artiste = x['artist']['name']
-        album = x['album']['title']
+        export = exportFolder+"/music/"
+        # Check whether the specified path exists or not
+        isExist = os.path.exists(export)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(export)
+            print("The new directory is created: " + export)
 
-        title = title.replace("?","")
+        export = exportFolder+"/music/"+playlistTitle+"/"
+        # Check whether the specified path exists or not
+        isExist = os.path.exists(export)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(export)
+            print("The new directory is created: " + export)
 
-        song = {'title': title, 'artist': artiste, 'album': album}
-        songs.append(song)
+        moi = exportFolder+"/music/"+playlistTitle+"/transit"
+        # Check whether the specified path exists or not
+        isExist = os.path.exists(moi)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(moi)
+            print("The new directory is created: " + moi)
 
+        downloadList = []
 
-        check = True
+        for x in res:
+            title = x['title']
+            artiste = x['artist']['name']
+            album = x['album']['title']
 
-        for path in os.listdir(export):
-            # check if current path is a file
-            if os.path.isfile(os.path.join(export, path)):
-                if title in path:
-                    check = False
-                    break
+            title = title.replace("?","")
+            title = title.replace("'", "")
+            title = title.replace("/", "")
 
-                else:
-                    check = True
-
-        if check == True:
-            downloadList.append(title)
-
-    i = 0
-
-    for x in res:
-        title = x['title']
-        artiste = x['artist']['name']
-        album = x['album']['title']
-
-        title = title.replace("?","")
-
-        song = {'title': title, 'artist': artiste, 'album': album}
-        songs.append(song)
+            song = {'title': title, 'artist': artiste, 'album': album}
+            songs.append(song)
 
 
-        check = True
+            check = True
 
-        for path in os.listdir(export):
-            # check if current path is a file
-            if os.path.isfile(os.path.join(export, path)):
-                #print(title + " :::: " + (path))
-                if title in path:
-                    #print(title + " :::: "+ (path))
-                    #print(title + " is alrweady doawload")
-                    check = False
-                    break
-
-                else:
-
-                    check = True
-
-
-        #print(check)
-
-        if check == True:
-            qsearch = ' '.join([title, artiste])
-
-            spotify = spotipy.Spotify(auth_manager=SpotifyClientCredentials())
-
-            print("download list = "+ str(downloadList))
-
-            print('song:' + title + " " + artiste + " " + album + " on " + str(len(downloadList)))
-
-            search = title + " " + artiste + " " + album
-
-            results = spotify.search(q=search, type='track')
-
-            url = results["tracks"]['items'][0]['external_urls']['spotify']
-
-            print("downloading : " +title)
-            os.system(".\spotdl.exe " + url)
-            for path in os.listdir(os.getcwd()):
+            for path in os.listdir(export):
                 # check if current path is a file
-                if os.path.isfile(os.path.join(os.getcwd(), path)):
-                    if ".mp3" in path:
-                        print(path)
-                        print(export + artiste+ " - " + title+".mp3")
-                        moveFile(os.getcwd() + "/" + path, export + "transit/"+artiste+ " - " + title+".mp3")
+                if os.path.isfile(os.path.join(export, path)):
+                    if title in path:
+                        check = False
+                        break
 
-            i = i+1
+                    else:
+                        check = True
+
+            if check == True:
+                downloadList.append(title)
+
+        i = 0
+
+        print("download list = " + str(downloadList))
+
+        for x in res:
+            title = x['title']
+            artiste = x['artist']['name']
+            album = x['album']['title']
+
+            title = title.replace("?","")
+            title = title.replace("'", "")
+            title = title.replace("/", "")
+
+            song = {'title': title, 'artist': artiste, 'album': album}
+            songs.append(song)
+
+
+            check = True
+
+            for path in os.listdir(export):
+                # check if current path is a file
+                if os.path.isfile(os.path.join(export, path)):
+                    #print(title + " :::: " + (path))
+                    if title in path:
+                        #print(title + " :::: "+ (path))
+                        #print(title + " is alrweady doawload")
+                        check = False
+                        break
+
+                    else:
+
+                        check = True
+
+
+            #print(check)
+
+            if check == True:
+                qsearch = ' '.join([title, artiste])
+
+                spotify = spotipy.Spotify(auth_manager=SpotifyClientCredentials())
 
 
 
-    print(songs)
+                print('song:' + title + " " + artiste + " " + album +" number "+ str(i) +" on " + str(len(downloadList)))
+
+                search = title + " " + artiste + " " + album
+
+                results = spotify.search(q=search, type='track')
+
+                url = results["tracks"]['items'][0]['external_urls']['spotify']
+
+                print("downloading : " +title)
+                os.system(".\spotdl.exe " + url)
+                for path in os.listdir(os.getcwd()):
+                    # check if current path is a file
+                    if os.path.isfile(os.path.join(os.getcwd(), path)):
+                        if ".mp3" in path:
+                            print(path)
+                            print(export + artiste+ " - " + title+".mp3")
+                            try:
+                                moveFile(os.getcwd() + "/" + path, export +artiste+ " - " + title+".mp3")
+                            except:
+                                print("error trying moving the file !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+                i = i+1
 
 
 
 
 
+
+
+
+# 2 https://www.deezer.com/playlist/11366038524
 # 3 https://www.deezer.com/playlist/11366444044
 # 4 https://www.deezer.com/playlist/11366812924
 
+# r & b https://www.deezer.com/playlist/11425912824
+# latino https://www.deezer.com/playlist/11428945244
 
-fetch_tracks_from_playlist("https://www.deezer.com/playlist/11366812924")
+playlist = {
+    "dance 2": "https://www.deezer.com/playlist/11366038524",
+    "dance 3": "https://www.deezer.com/playlist/11366444044",
+    "dance 4": "https://www.deezer.com/playlist/11366812924",
+    "r et b": "https://www.deezer.com/playlist/11425912824",
+    "latino": "https://www.deezer.com/playlist/11428945244",
+    "hip pop": "https://www.deezer.com/playlist/11425899284",
+    "rap fr": "https://www.deezer.com/playlist/11445987984",
+    "rock classic": "https://www.deezer.com/playlist/11543765024",
+    "année 80": "https://deezer.page.link/aYzfxmKsup7LPSxF8,"
+}
+
+
+
+fetch_tracks_from_playlist(playlist)
